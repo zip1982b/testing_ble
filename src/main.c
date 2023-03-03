@@ -68,6 +68,7 @@ void button_handler(uint32_t button_state, uint32_t has_changed){
 				break;
 		}
 		LOG_INF("button %d pressed", button_pressed);
+		set_button_value(button_pressed);
 	}
 }
 

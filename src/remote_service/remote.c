@@ -18,14 +18,36 @@ static const struct bt_data ad[] = {
 
 };
 
+static uint8_t button_value = 0;
+
+
 /*scan response data*/
 static const struct bt_data sd[] = {
     BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_REMOTE_SERV_VAL)
 };
 
 
+/*declarations*/
+static ssize_t read_button_characteristic_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf, uint16_t len, uint16_t offset);
+
+
+BT_GATT_SERVICE_DEFINE(remote_srv, 
+    BT_GATT_PRIMARY_SERVICE(BT_UUID_REMOTE_SERVICE),
+        BT_GATT_CHARACTERISTIC(BT_UUID_REMOTE_BUTTON_CHRC, BT_GATT_CHRC_READ, BT_GATT_PERM_READ, read_button_characteristic_cb, NULL, NULL),
+
+);
+
 
 /*callbacks*/
+static ssize_t read_button_characteristic_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf, uint16_t len, uint16_t offset){
+    return bt_gatt_attr_read(conn, attr, buf, len, offset, &button_value, sizeof(button_value));
+}
+
+
+
+
+
+
 void bt_ready(int err){
     if(err){
         LOG_ERR("bt_enable returned %d", err);
@@ -33,7 +55,9 @@ void bt_ready(int err){
     k_sem_give(&bt_init_ok);
 }
 
-
+void set_button_value(uint8_t btn_value){
+    button_value = btn_value;
+}
 
 int bluetooth_init(struct bt_conn_cb *bt_cb){
     int err;
