@@ -15,6 +15,38 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 #define CONN_STATUS_LED DK_LED2
 #define RUN_LED_BLINK_INTERVAL 1000
 
+static struct bt_conn *current_conn;
+
+
+/*Declarations*/
+void on_connected(struct bt_conn *conn, uint8_t err);
+void on_disconnected(struct bt_conn *conn, uint8_t reason);
+struct bt_conn_cb bluetooth_callbacks = {
+	.connected = on_connected,
+	.disconnected = on_disconnected
+};
+
+/*Callbacks*/
+
+void on_connected(struct bt_conn *conn, uint8_t err){
+	if(err){
+		LOG_ERR("connection error: %d", err);
+		return;
+	}
+	LOG_INF("connected.");
+	current_conn = bt_conn_ref(conn);
+	dk_set_led_on(CONN_STATUS_LED);
+}
+
+void on_disconnected(struct bt_conn *conn, uint8_t reason){
+	LOG_INF("Disconnected reason: %d", reason);
+	dk_set_led_off(CONN_STATUS_LED);
+	if(current_conn){
+		bt_conn_unref(current_conn);
+		current_conn = NULL;
+	}
+}
+
 
 void button_handler(uint32_t button_state, uint32_t has_changed){
 	int button_pressed = 0;
@@ -59,7 +91,7 @@ void main(void)
 
 	configure_dk_buttons_leds();
 
-	err = bluetooth_init();
+	err = bluetooth_init(&bluetooth_callbacks);
 	if (err){
 		LOG_ERR("bluetooth_init() required %d", err);
 	}

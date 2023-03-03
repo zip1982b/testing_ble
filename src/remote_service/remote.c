@@ -35,9 +35,15 @@ void bt_ready(int err){
 
 
 
-int bluetooth_init(void){
+int bluetooth_init(struct bt_conn_cb *bt_cb){
     int err;
     LOG_INF("Initializing bluetooth");
+
+    if(bt_cb == NULL){
+        return -NRFX_ERROR_NULL;
+    }
+
+    bt_conn_cb_register(bt_cb);
     err = bt_enable(bt_ready);
     if(err){
         LOG_ERR("bt_enable returned %d", err);

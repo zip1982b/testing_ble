@@ -15,4 +15,4 @@
 
 
 
-int bluetooth_init(void);
+int bluetooth_init(struct bt_conn_cb *bt_cb);
