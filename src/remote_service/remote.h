@@ -16,9 +16,16 @@
 #define BT_UUID_REMOTE_SERVICE BT_UUID_DECLARE_128(BT_UUID_REMOTE_SERV_VAL)
 #define BT_UUID_REMOTE_BUTTON_CHRC BT_UUID_DECLARE_128(BT_UUID_REMOTE_BUTTON_CHRC_VAL)
 
+enum bt_button_notifications_enabled{
+    BT_BUTTON_NOTIFICATIONS_ENABLED,
+    BT_BUTTON_NOTIFICATIONS_DISABLED,
+};
+struct bt_remote_srv_cb{
+    void (*notif_changed)(enum bt_button_notifications_enabled status);
+};
 
 
-
+int send_button_notification(struct bt_conn *conn, uint8_t value, uint16_t length);
 void set_button_value(uint8_t btn_value);
+int bluetooth_init(struct bt_conn_cb *bt_cb, struct bt_remote_srv_cb *remote_cb);
 
-int bluetooth_init(struct bt_conn_cb *bt_cb);

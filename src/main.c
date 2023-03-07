@@ -21,9 +21,14 @@ static struct bt_conn *current_conn;
 /*Declarations*/
 void on_connected(struct bt_conn *conn, uint8_t err);
 void on_disconnected(struct bt_conn *conn, uint8_t reason);
+void on_notif_changed(enum bt_button_notifications_enabled status);
 struct bt_conn_cb bluetooth_callbacks = {
 	.connected = on_connected,
 	.disconnected = on_disconnected
+};
+
+struct bt_remote_srv_cb remote_service_callbacks = {
+	.notif_changed = on_notif_changed,
 };
 
 /*Callbacks*/
@@ -48,8 +53,17 @@ void on_disconnected(struct bt_conn *conn, uint8_t reason){
 }
 
 
+
+void on_notif_changed(enum bt_button_notifications_enabled status){
+	if(status == BT_BUTTON_NOTIFICATIONS_ENABLED){
+		LOG_INF("Notification enabled");
+	}
+	else LOG_INF("Notification disabled");
+}
+
 void button_handler(uint32_t button_state, uint32_t has_changed){
 	int button_pressed = 0;
+	int err;
 	if(has_changed & button_state){
 		switch(has_changed){
 			case DK_BTN1_MSK:
@@ -69,6 +83,10 @@ void button_handler(uint32_t button_state, uint32_t has_changed){
 		}
 		LOG_INF("button %d pressed", button_pressed);
 		set_button_value(button_pressed);
+		err = send_button_notification(current_conn, button_pressed, 1);
+		if(err){
+			LOG_ERR("couldn`t send notification (err:%d)", err);
+		}
 	}
 }
 
@@ -92,7 +110,7 @@ void main(void)
 
 	configure_dk_buttons_leds();
 
-	err = bluetooth_init(&bluetooth_callbacks);
+	err = bluetooth_init(&bluetooth_callbacks, &remote_service_callbacks);
 	if (err){
 		LOG_ERR("bluetooth_init() required %d", err);
 	}
@@ -102,5 +120,4 @@ void main(void)
 		dk_set_led(RUN_STATUS_LED, (blink_interval++)%2);
 		k_sleep(K_MSEC(RUN_LED_BLINK_INTERVAL));
 	}
-
 }
