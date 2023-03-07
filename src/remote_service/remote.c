@@ -30,11 +30,13 @@ static const struct bt_data sd[] = {
 /*declarations*/
 static ssize_t read_button_characteristic_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf, uint16_t len, uint16_t offset);
 void button_chrc_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value);
+static ssize_t on_write(struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf, uint16_t len, uint16_t offset, uint8_t flags);
 
 BT_GATT_SERVICE_DEFINE(remote_srv, 
     BT_GATT_PRIMARY_SERVICE(BT_UUID_REMOTE_SERVICE),
         BT_GATT_CHARACTERISTIC(BT_UUID_REMOTE_BUTTON_CHRC, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_button_characteristic_cb, NULL, NULL),
         BT_GATT_CCC(button_chrc_ccc_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+        BT_GATT_CHARACTERISTIC(BT_UUID_REMOTE_MESSAGE_CHRC, BT_GATT_CHRC_WRITE_WITHOUT_RESP, BT_GATT_PERM_WRITE, NULL, on_write, NULL),
 
 );
 
@@ -54,6 +56,15 @@ void button_chrc_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value
 
 static ssize_t read_button_characteristic_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf, uint16_t len, uint16_t offset){
     return bt_gatt_attr_read(conn, attr, buf, len, offset, &button_value, sizeof(button_value));
+}
+
+
+static ssize_t on_write(struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf, uint16_t len, uint16_t offset, uint8_t flags){
+    LOG_INF("Received data, handle %d, conn %p", attr->handle, (void*)conn);
+    if(remote_service_callbacks.data_received){
+        remote_service_callbacks.data_received(conn, buf, len);
+    }
+    return len;
 }
 
 void on_sent(struct bt_conn *conn, void *user_data){
@@ -105,7 +116,7 @@ int bluetooth_init(struct bt_conn_cb *bt_cb, struct bt_remote_srv_cb *remote_cb)
 
     bt_conn_cb_register(bt_cb);
     remote_service_callbacks.notif_changed = remote_cb->notif_changed;
-
+    remote_service_callbacks.data_received = remote_cb->data_received;
 
 
 
